@@ -1,0 +1,43 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+
+  ais-ingester:
+    build:
+      context: ./ais-ingester
+      dockerfile: Dockerfile
+    container_name: ais-ingester
+    restart: unless-stopped
+    environment:
+      MONGO_URI: "mongodb://root:password@mongodb:27017/"
+      AISSTREAM_API_KEY: "f761a4751f83e83e164a564085f56fc7a798d6e1"
+      AISSTREAM_URL: "wss://stream.aisstream.io/v0/stream"
+    depends_on:
+      - mongodb
+
+  geojson-server:
+    build:
+      context: ./geojson-server
+      dockerfile: Dockerfile
+    container_name: geojson-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      MONGO_URI: "mongodb://root:password@mongodb:27017/"
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_data:
+  mongodb_config:
